@@ -5,10 +5,12 @@
     :copyright: © 2018 Grey Li <withlihui@gmail.com>
     :license: MIT, see LICENSE for more details.
 """
+import random
+import datetime
 import click
 
 from sayhello import app, db
-from sayhello.models import Message
+from sayhello.models import User, Message
 
 
 @app.cli.command()
@@ -35,13 +37,44 @@ def forge(count):
     fake = Faker()
     click.echo('Working...')
 
+    user = User(
+        username='lguujg'
+    )
+    user.set_password('lguujg')
+    db.session.add(user)
+    db.session.commit()
+    click.echo('Created user lguujg.')
+
+    user_count = User.query.count()
+
     for i in range(count):
         message = Message(
             name=fake.name(),
+            color=f"#{random.randint(0, 0xFFFFFF):06x}",
             body=fake.sentence(),
-            timestamp=fake.date_time_this_year()
+            reviewed=True,
+            timestamp=fake.date_time_this_year(),
+            user=User.query.get(random.randint(1, user_count))
         )
         db.session.add(message)
-
     db.session.commit()
     click.echo('Created %d fake messages.' % count)
+
+    message_count = Message.query.count()
+
+    for i in range(int(count * 0.1)):
+        replied = Message.query.get(random.randint(1, message_count))
+        start_date = replied.timestamp
+        end_date = datetime.datetime(datetime.datetime.now().year, 12, 31, 23, 59, 59)
+        message = Message(
+            name=fake.name(),
+            color=f"#{random.randint(0, 0xFFFFFF):06x}",
+            body=fake.sentence(),
+            reviewed=True,
+            timestamp=fake.date_time_between(start_date=start_date, end_date=end_date),
+            user=User.query.get(random.randint(1, user_count)),
+            replied=replied,
+        )
+        db.session.add(message)
+    db.session.commit()
+    click.echo('Created %d fake message replies.' % int(count * 0.1))
