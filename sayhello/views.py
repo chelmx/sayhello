@@ -66,7 +66,7 @@ def index():
         reply = Message.query.get_or_404(reply)
     form = HelloForm()
     page = request.args.get('page', 1, type=int)
-    pagination = Message.query.filter(or_(Message.reviewed == True, Message.user_id == current_user.id)).order_by(Message.timestamp.desc()).paginate(page, per_page=10)
+    pagination = Message.query.filter(or_(Message.reviewed == True, hasattr(current_user, 'id') and Message.user_id == current_user.id)).order_by(Message.timestamp.desc()).paginate(page, per_page=10)
     args_except_reply = {k: v for k, v in request.args.items() if k != 'reply'}
     return render_template('index.html', reply=reply, form=form, pagination=pagination, args_except_reply=args_except_reply)
 
