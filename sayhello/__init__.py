@@ -10,6 +10,7 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf import CSRFProtect
 
 app = Flask('sayhello')
 app.config.from_pyfile('settings.py')
@@ -20,6 +21,7 @@ db = SQLAlchemy(app)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 login_manager = LoginManager(app)
+csrf = CSRFProtect(app)
 
 @login_manager.user_loader
 def load_user(user_id):

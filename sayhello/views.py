@@ -86,3 +86,37 @@ def index_post():
         db.session.commit()
         flash('Your message have been sent to the world!')
     return redirect(url_for('index'))
+
+@app.route('/manage', methods=['GET', 'POST'])
+@login_required
+def manage():
+    filter_rule = request.args.get('filter', 'all')  # 'all', 'unreviewed', 'admin'
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    if filter_rule == 'unread':
+        filtered_messages = Message.query.filter_by(reviewed=False)
+    else:
+        filtered_messages = Message.query
+
+    pagination = filtered_messages.order_by(Message.timestamp.desc()).paginate(page, per_page=per_page)
+    messages = pagination.items
+
+    return render_template('manage.html', messages=messages, pagination=pagination)
+
+@app.route('/message/<int:message_id>/delete', methods=['POST'])
+@login_required
+def delete_message(message_id):
+    message = Message.query.get_or_404(message_id)
+    db.session.delete(message)
+    db.session.commit()
+    flash('Message deleted.', 'success')
+    return redirect_back()
+
+@app.route('/message/<int:message_id>/approve', methods=['POST'])
+@login_required
+def approve_message(message_id):
+    message = Message.query.get_or_404(message_id)
+    message.reviewed = True
+    db.session.commit()
+    flash('Message published.', 'success')
+    return redirect_back()

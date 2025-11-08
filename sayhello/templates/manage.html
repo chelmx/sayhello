@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% from 'bootstrap/pagination.html' import render_pagination %}
+
+{% block title %}Manage messages{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Messages
+            <small class="text-muted">{{ pagination.total }}</small>
+        </h1>
+
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <a class="nav-link disabled" href="#">Filter </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.args.get('filter', 'all') == 'all' %}active{% endif %}"
+                   href="{{ url_for('manage', filter='all') }}">All</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.args.get('filter') == 'unread' %}active{% endif %}"
+                   href="{{ url_for('manage', filter='unread') }}">Unread {% if unread_messages %}<span
+                        class="badge badge-success">{{ unread_messages }}</span>{% endif %}</a>
+            </li>
+        </ul>
+    </div>
+
+    {% if messages %}
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>No.</th>
+                <th>User</th>
+                <th>Name</th>
+                <th>Body</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            {% for message in messages %}
+                <tr {% if not message.reviewed %}class="table-warning" {% endif %}>
+                    <td>{{ loop.index + ((pagination.page - 1) * 10) }}</td>
+                    <td>
+                        {{ message.user.username }}
+                    </td>
+                    <td>{{ message.name }}</td>
+                    <td>{{ message.body }}</td>
+                    <td>{{ moment(message.timestamp).format('LL') }}</td>
+                    <td>
+                        {% if not message.reviewed %}
+                            <form class="inline" method="post"
+                                  action="{{ url_for('.approve_message', message_id=message.id, next=request.full_path) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                            </form>
+                        {% endif %}
+                        <form class="inline" method="post"
+                              action="{{ url_for('.delete_message', message_id=message.id, next=request.full_path) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Are you sure?');">Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        <div class="page-footer">{{ render_pagination(pagination) }}</div>
+    {% else %}
+        <div class="tip"><h5>No messages.</h5></div>
+    {% endif %}
+{% endblock %}
