@@ -34,7 +34,16 @@ class Message(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     replied_id = db.Column(db.Integer, db.ForeignKey('message.id'))
+    root_id = db.Column(db.Integer, db.ForeignKey('message.id'))
 
     user = db.relationship('User', back_populates='messages')
-    replies = db.relationship('Message', back_populates='replied', cascade='all, delete-orphan')
-    replied = db.relationship('Message', back_populates='replies', remote_side=[id])
+    replies = db.relationship('Message', back_populates='replied', foreign_keys=[replied_id], cascade='all, delete-orphan')
+    replied = db.relationship('Message', back_populates='replies', foreign_keys=[replied_id], remote_side=[id])
+    messages = db.relationship(
+        'Message',                          # 关联自身模型（自引用）
+        primaryjoin='Message.root_id == Message.id',  # 核心条件：子孙的 root_id = 当前消息的 id
+        foreign_keys='Message.root_id',     # 子孙节点的 root_id 字段作为外键
+        viewonly=True,                      # 只读（派生关系，无需SQLAlchemy自动维护）
+        lazy='dynamic',                     # 延迟加载（返回Query对象，可进一步过滤）
+        back_populates=None                 # 无需反向引用（派生关系）
+    )

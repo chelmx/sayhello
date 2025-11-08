@@ -36,12 +36,27 @@
                         {{ moment(message.timestamp).fromNow(refresh=True) }}
                     </small>
                 </div>
-                {% if message.replied %}
-                    <p class="alert alert-dark reply-body">{{ message.replied.name }}:
-                        <br>{{ message.replied.body }}
-                    </p>
-                {% endif %}
                 <p class="mb-1" style="color: {{ message.color }}">{{ message.body }}</p>
+                {% for m in message.messages %}
+                    {% if m.reviewed or (current_user.is_authenticated and m.user_id == current_user.id) %}
+                        <p class="alert alert-dark reply-body">
+                            {{ m.name }}
+                            {% if m.replied_id != m.root_id %}
+                                @ {{ m.replied.name }}
+                            {% endif %}
+                            :
+                            <br>
+                            {{ m.body }}
+                            <br>
+                            <a class="btn btn-light btn-sm" href="{{ url_for(request.endpoint, reply=m.id, **args_except_reply) }}">Reply</a>
+                            <small data-toggle="tooltip" data-placement="top"
+                               data-timestamp="{{ m.timestamp.strftime('%Y-%m-%dT%H:%M:%SZ') }}"
+                               data-delay="500">
+                            {{ moment(m.timestamp).fromNow(refresh=True) }}
+                        </small>
+                        </p>
+                    {% endif %}
+                {% endfor %}
             </li>
         {% endfor %}
     </div>

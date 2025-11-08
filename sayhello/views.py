@@ -13,7 +13,7 @@ except ImportError:
 from flask import request, flash, redirect, url_for, render_template
 from flask_login import current_user, login_user, logout_user, login_required
 
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 
 from sayhello import app, db
 from sayhello.forms import LoginForm, HelloForm
@@ -66,7 +66,7 @@ def index():
         reply = Message.query.get_or_404(reply)
     form = HelloForm()
     page = request.args.get('page', 1, type=int)
-    pagination = Message.query.filter(or_(Message.reviewed == True, hasattr(current_user, 'id') and Message.user_id == current_user.id)).order_by(Message.timestamp.desc()).paginate(page, per_page=10)
+    pagination = Message.query.filter(and_(Message.root_id == None, or_(Message.reviewed == True, hasattr(current_user, 'id') and Message.user_id == current_user.id))).order_by(Message.timestamp.desc()).paginate(page, per_page=10)
     args_except_reply = {k: v for k, v in request.args.items() if k != 'reply'}
     return render_template('index.html', reply=reply, form=form, pagination=pagination, args_except_reply=args_except_reply)
 
@@ -82,6 +82,7 @@ def index_post():
         reply = request.args.get('reply')
         if reply:
             message.replied = Message.query.get_or_404(reply)
+            message.root_id = message.replied.root_id if message.replied.root_id else message.replied.id
         db.session.add(message)
         db.session.commit()
         flash('Your message have been sent to the world!')

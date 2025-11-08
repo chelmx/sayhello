@@ -48,12 +48,14 @@ def forge(count):
     user_count = User.query.count()
 
     for i in range(count):
+        start_date = datetime.datetime(datetime.datetime.now().year - 1, 1, 1, 0, 0, 0)
+        end_date = datetime.datetime.now()
         message = Message(
             name=fake.name(),
             color=f"#{random.randint(0, 0xFFFFFF):06x}",
             body=fake.sentence(),
             reviewed=True,
-            timestamp=fake.date_time_this_year(),
+            timestamp=fake.date_time_between(start_date=start_date, end_date=end_date),
             user=User.query.get(random.randint(1, user_count))
         )
         db.session.add(message)
@@ -62,16 +64,37 @@ def forge(count):
 
     message_count = Message.query.count()
 
-    for i in range(int(count * 0.1)):
+    for i in range(int(count * 0.5)):
         replied = Message.query.get(random.randint(1, message_count))
         start_date = replied.timestamp
-        end_date = datetime.datetime(datetime.datetime.now().year, 12, 31, 23, 59, 59)
+        end_date = datetime.datetime.now()
         message = Message(
             name=fake.name(),
             color=f"#{random.randint(0, 0xFFFFFF):06x}",
             body=fake.sentence(),
             reviewed=True,
             timestamp=fake.date_time_between(start_date=start_date, end_date=end_date),
+            root_id=replied.id,
+            user=User.query.get(random.randint(1, user_count)),
+            replied=replied,
+        )
+        db.session.add(message)
+    db.session.commit()
+    click.echo('Created %d fake message replies.' % int(count * 0.5))
+
+    message_count = Message.query.count()
+
+    for i in range(int(count * 0.1)):
+        replied = Message.query.get(random.randint(count + 1, message_count))
+        start_date = replied.timestamp
+        end_date = datetime.datetime.now()
+        message = Message(
+            name=fake.name(),
+            color=f"#{random.randint(0, 0xFFFFFF):06x}",
+            body=fake.sentence(),
+            reviewed=True,
+            timestamp=fake.date_time_between(start_date=start_date, end_date=end_date),
+            root_id=replied.root_id,
             user=User.query.get(random.randint(1, user_count)),
             replied=replied,
         )
